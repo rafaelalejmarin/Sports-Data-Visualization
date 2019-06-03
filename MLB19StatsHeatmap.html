@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<head>
+	<meta charset="utf-8">
+	<title>MLB Stats Heatmap</title>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+<style>
+
+text.title {
+	font-size: 30pt;
+	font-family: Helvetica;
+	font-weight: 300;
+}
+
+text.label {
+	font-size: 20pt;
+	font-family: Helvetica;
+	font-weight: 300;
+}
+
+text.legend {
+	font-size: 12pt;
+	font-family: Helvetica;
+}
+
+text.statfont {
+	font-size: 7pt;
+	font-family: Helvetica;
+	font-weight: 300;
+}
+
+text.teamfont {
+	font-size: 11pt;
+	font-family: Helvetica;
+}
+
+rect.gridborder {
+	stroke: #000000;
+	stroke-width:1px;
+}
+
+text.heatMapvalues {
+	font-size: 7pt;
+	font-family: Helvetica;
+	font-weight: 400;
+}
+
+text.playofffont {
+	font-size: 8pt;
+	font-family: Helvetica;
+	font-weight: 800;
+}
+
+</style>
+</head>
+<body>
+	<div id="FantasyHeatmap"></div>
+<script>
+
+// Load Data
+d3.csv("../baseball/Data_MLB19StatsHeatmap.csv ", function(d) {
+
+// Create margin and grid sizes
+var margin = {top: 60, right: 50, bottom: 80, left: 80},
+width = 1700 - margin.left - margin.right;
+height = 750 - margin.top - margin.bottom;
+gridSize = 40,
+
+// Initialize variables
+colors = ['#2166ac','#5385bd','#7fa5ce','#a8c2dd','#ccdbea','#e9eff5','#fbfcfd','#fdeeec',
+		'#fbccc2','#f4aa9c','#ea8879','#dd6558','#cb403b','#b2182b'],
+
+player = ["Daza", "Amanau", "De Gouveia", "Marin",
+		"Leisge", "Cable", "Sanchez", "Serota",
+		"Bertot", "Kirkland", "Christie", "Woo",
+		"Tamayo", "Crain"],
+
+CleanData = {} // Where filtered data goes
+// Filter the data
+for (var i = 1; i < 7; i++)
+	{	CleanData[i] = []	}
+
+for (line1 of d) {
+	stat = line1.stat
+	rank = line1.rank
+	type = line1.type
+	rank2 = line1.rank2
+	rank3 = line1.rank3
+	for (z in player) 	{
+		points = +line1.team
+		team = player[z]
+		CleanData[type].push({
+			'team': team,
+			'number': z,
+			'points': +line1[team],
+			'stat': +stat,
+			'rank' : +rank,
+			'rank2' : +rank2,
+			'rank3' : +rank3,
+			'type' : +type,
+		})
+						}
+}
+
+
+pitchingstat = ["IP","H","ER","BB","K","CG","SO",
+			"NH","PG","W","L","SV","BS","HD"],
+battingstat = ["R","1B","2B", "3B", "HR", "RBI", "GWRBI",
+			"BB", "K", "SAC" , "SB", "CS", "CYC", "GSHR"],
+pointstat = ["W", "L","T","PCT","GB","PF","PA","Moves"];
+
+// colorScale
+var colorScale = d3.scale.quantile()
+	.domain([1,14])
+	.range(colors);
+
+// Create SVG
+var svg = d3.select("#FantasyHeatmap").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	.append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// Title
+svg.append("text")
+	.attr("x", width/2)
+	.attr("y", -20)
+	.attr("text-anchor", "middle")
+	.attr("class","title")
+	.text("MLB Fantasy 2019");
+
+// Y axis label
+svg.append("text")
+		.attr("class", "legend")
+		.style("text-anchor", "middle")
+		.attr("x",70)
+		.attr("y",20)
+		.text("Team");
+
+// X axis batting label
+svg.append("text")
+	.attr("class","label")
+	.attr("x", 380)
+	.attr("y", 650)
+	.style("text-anchor","middle")
+	.text("Batting");
+
+// X axis pitching label
+svg.append("text")
+	.attr("class","label")
+	.attr("x", 980)
+	.attr("y", 650)
+	.style("text-anchor","middle")
+	.text("Pitching");
+
+// X axis pitching label
+svg.append("text")
+	.attr("class","label")
+	.attr("x", 1440)
+	.attr("y", 650)
+	.style("text-anchor","middle")
+	.text("Overall");
+
+// Create battingstat labels
+var battingstatLabels = svg.selectAll("statLabel")
+	.data(battingstat)
+	.enter().append("text")
+	.text(function(d) {return d; })
+	.attr("x", function(d, i) { return i * gridSize + 140; })
+	.attr("y", 605)
+	.attr("class", "statfont")
+	.style("text-anchor", "middle");
+
+// Create pitchingstat labels
+var pitchingstatLabels = svg.selectAll("statLabel")
+	.data(pitchingstat)
+	.enter().append("text")
+	.text(function(d) {return d; })
+	.attr("x", function(d, i) { return i * gridSize + 720; })
+	.attr("y", 605)
+	.attr("class", "statfont")
+	.style("text-anchor", "middle");
+
+// Create pointstat labels
+var pointstatLabels = svg.selectAll("statLabel")
+	.data(pointstat)
+	.enter().append("text")
+	.text(function(d) {return d; })
+	.attr("x", function(d, i) { return i * gridSize + 1300; })
+	.attr("y", 605)
+	.attr("class", "statfont")
+	.style("text-anchor", "middle");
+
+// Create team labels
+var teamLabels = svg.selectAll("teamLabel")
+	.data(player)
+	.enter().append("text")
+	.text(function (d) { return d; })
+	.attr("x", 75)
+	.attr("y", function (d, i) { return i * gridSize + 30; })
+	.style("text-anchor", "middle")
+	.attr("transform", "translate(-6," + gridSize / 1.5 + ")")
+	.attr("class", "teamfont")
+
+// Create Heatmap for batting stats
+var heatMap = svg.selectAll("box")
+	.data(CleanData[1])
+	.enter().append("rect")
+	.attr("y", function(d) { return (d.number) * gridSize + margin.top-30; })
+	.attr("x", function(d) { return (d.rank) * gridSize + margin.left ; })
+	.attr("class", "gridborder")
+	.attr("width", gridSize)
+	.attr("height", gridSize)
+	.attr("rx", 10)
+	.attr("ry", 10)
+	.style("fill", '#ffffff')
+	.transition().duration(1000)
+	.style("fill", function(d) { return colorScale(+d.points); })
+
+// Add values to heatMap
+var heatMapvalues = svg.selectAll("heatmapLabel")
+	.data(CleanData[4])
+	.enter().append("text")
+	.text(function(d) { return d.points })
+	.attr("class", "heatMapvalues")
+	.attr("y", function(d) { return (d.number) * gridSize + margin.top+gridSize/2-30; })
+	.attr("x", function(d) { return (d.rank) * gridSize + margin.left+gridSize/2; })
+	.attr("dy", ".35em")
+	.attr("text-anchor", "middle");
+
+// Create Heatmap for pitching stats
+var heatMap2 = svg.selectAll("box")
+	.data(CleanData[2])
+	.enter().append("rect")
+	.attr("y", function(d) { return (d.number) * gridSize + margin.top-30; })
+	.attr("x", function(d) { return (d.rank2) * gridSize + margin.left + 580 ; })
+	.attr("class", "gridborder")
+	.attr("width", gridSize)
+	.attr("height", gridSize)
+	.attr("rx", 10)
+	.attr("ry", 10)
+	.style("fill", '#ffffff')
+	.transition().duration(1000)
+	.style("fill", function(d) { return colorScale(+d.points); });
+
+// Add values to heatMap2
+var heatMapvalues2 = svg.selectAll("heatmapLabel")
+	.data(CleanData[5])
+	.enter().append("text")
+	.text(function(d) { return d.points })
+	.attr("class", "heatMapvalues")
+	.attr("y", function(d) { return (d.number) * gridSize + margin.top+gridSize/2-30; })
+	.attr("x", function(d) { return (d.rank2) * gridSize + margin.left+gridSize/2+580; })
+	.attr("dy", ".35em")
+	.attr("text-anchor", "middle");
+
+// Create Heatmap for point stats
+var heatMap3 = svg.selectAll("box")
+	.data(CleanData[3])
+	.enter().append("rect")
+	.attr("y", function(d) { return (d.number) * gridSize + margin.top-30; })
+	.attr("x", function(d) { return (d.rank3) * gridSize + margin.left + 1160 ; })
+	.attr("class", "gridborder")
+	.attr("width", gridSize)
+	.attr("height", gridSize)
+	.attr("rx", 10)
+	.attr("ry", 10)
+	.style("fill", '#ffffff')
+	.transition().duration(1000)
+	.style("fill", function(d) { return colorScale(+d.points); });
+
+// Add values to heatMap3
+var heatMapvalues2 = svg.selectAll("heatmapLabel")
+	.data(CleanData[6])
+	.enter().append("text")
+	.text(function(d) { return d.points })
+	.attr("class", "heatMapvalues")
+	.attr("y", function(d) { return (d.number) * gridSize + margin.top+gridSize/2-30; })
+	.attr("x", function(d) { return (d.rank3) * gridSize + margin.left+gridSize/2+1160; })
+	.attr("dy", ".35em")
+	.attr("text-anchor", "middle");
+
+// Create legend
+var legend = svg.selectAll("legend")
+  	.data([1].concat(colorScale.quantiles()), function(d) { return d; })
+  	.enter().append("g")
+  	.attr("class", "legend");
+
+// Legend Grids
+legend.append("rect")
+	.attr("x",-20)
+	.attr("y", function(d, i) { return i * gridSize + 30; })
+    .attr("width", gridSize)
+    .attr("height", gridSize)
+	.attr("rx", 10)
+	.attr("ry", 10)
+	.attr("class", "gridborder")
+    .style("fill", function(d, i) { return colors[i]; });
+
+// Legend Numbers
+legend.append("text")
+    .attr("class", "legend")
+    .text(function(d) { return Math.ceil(d); })
+	.style("text-anchor", "middle")
+	.attr("dy", '.35em')
+	.attr("x",-32)
+	.attr("y", function(d, i) { return i * gridSize + 30 + gridSize/2; });
+
+// Legend Title
+svg.append("text")
+	.text("Rank")
+	.attr("class", "legend")
+	.style("text-anchor", "middle")
+	.attr("x",-10)
+	.attr("y",20);
+
+// Add-Ons
+
+// Draw line under Rank/team
+var topline = svg.append("line")
+    .attr(
+    {
+        "x1" : -40,
+        "x2" : 115,
+        "y1" : 25,
+        "y2" : 25,
+        "stroke" : "black",
+        "stroke-width" : "1.5px",
+    });
+
+
+// Draw lines under heatmap
+// Batting line
+var battingline = svg.append("line")
+    .attr(
+    {
+        "x1" : gridSize + margin.left,
+        "x2" : gridSize + margin.left + 560,
+        "y1" : gridSize + margin.top + 520,
+        "y2" : gridSize + margin.top + 520,
+        "stroke" : "black",
+        "stroke-width" : "1.5px",
+    });
+
+// Pitching line
+var pitchingline = svg.append("line")
+    .attr(
+    {
+        "x1" : gridSize + margin.left + 580,
+        "x2" : gridSize + margin.left + 1140,
+        "y1" : gridSize + margin.top + 520,
+        "y2" : gridSize + margin.top + 520,
+        "stroke" : "black",
+        "stroke-width" : "1.5px",
+    });
+
+// Overall line
+var overallline = svg.append("line")
+    .attr(
+    {
+        "x1" : gridSize + margin.left + 1160,
+        "x2" : gridSize + margin.left + 1480,
+        "y1" : gridSize + margin.top + 520,
+        "y2" : gridSize + margin.top + 520,
+        "stroke" : "black",
+        "stroke-width" : "1.5px",
+    });
+
+var playoffs = svg.append("rect")
+	.attr("x",-50)
+	.attr("y",0)
+	.attr("ry",5)
+	.attr("rx",5)
+	.attr("stroke-width", "2")
+	.attr("stroke", 'black')
+	.attr("width", width+90)
+	.attr("height", 270)
+	.style("fill-opacity", 0.05)
+
+
+svg.append("text")
+	.text("Playoff Eligible")
+	.attr("class", "playofffont")
+	.style("text-anchor", "end")
+	.attr("x",width+30)
+	.attr("y",15);
+
+});
+</script>
+</body>
+</html>
